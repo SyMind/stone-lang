@@ -1,8 +1,10 @@
-import lineReader from 'line-reader';
+import lineReader from 'line-reader'
 
-const createReader = (file: string): Promise<any> =>
+type Reader = typeof lineReader.open extends (file, cb: (err, reader: infer P) => void) => void ? P : never
+
+const createReader = (filename: string): Promise<Reader> =>
     new Promise((resolve, reject) => {
-        lineReader.open(file, (err, reader) => {
+        lineReader.open(filename, (err, reader) => {
             if (err) {
                 reject(err)
             } else {
@@ -11,7 +13,7 @@ const createReader = (file: string): Promise<any> =>
         })
     })
 
-const nextLine = (reader: any): Promise<string> =>
+const nextLine = (reader: Reader): Promise<string> =>
     new Promise((resolve, reject) => {
         reader.nextLine((err, line) => {
             if (err) {
@@ -22,7 +24,7 @@ const nextLine = (reader: any): Promise<string> =>
         })
     })
 
-const closeReader = (reader: any): Promise<void> =>
+const closeReader = (reader: Reader): Promise<void> =>
     new Promise((resolve, reject) => {
         reader.close(err => {
             if (err)
@@ -30,16 +32,16 @@ const closeReader = (reader: any): Promise<void> =>
             else
                 resolve()
         })
-        
+
     })
 
 export class LineReader {
-    private readonly file: string
-    private reader: any
+    private readonly filename: string
+    private reader: Reader
     private lineNumber: number = -1
 
-    constructor(file: string) {
-        this.file = file
+    constructor(filename: string) {
+        this.filename = filename
     }
 
     getLineNumber(): number {
@@ -48,7 +50,7 @@ export class LineReader {
 
     async nextLine(): Promise<string> {
         if (!this.reader) {
-            this.reader = await createReader(this.file)
+            this.reader = await createReader(this.filename)
         }
 
         if (!this.reader.hasNextLine()) {

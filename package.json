@@ -8,6 +8,7 @@
   },
   "devDependencies": {
     "@types/jest": "^26.0.22",
+    "@types/line-reader": "0.0.33",
     "@types/node": "^14.14.37",
     "@typescript-eslint/eslint-plugin": "^4.20.0",
     "@typescript-eslint/parser": "^4.20.0",
