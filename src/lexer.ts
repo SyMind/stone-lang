@@ -13,23 +13,26 @@ export class Lexer {
     }
 
     async read(): Promise<Token> {
-        if (await this.fillQueue(0))
+        if (await this.fillQueue(0)) {
             return this.queue.pop()
+        }
         return Token.EOF
     }
 
     async peek(i: number): Promise<Token> {
-        if (await this.fillQueue(i))
+        if (await this.fillQueue(i)) {
             return this.queue[i]
+        }
         return Token.EOF
     }
 
     protected async fillQueue(i: number): Promise<boolean> {
         while (i >= this.queue.length)
-            if (this.hasMore)
+            if (this.hasMore) {
                 await this.readLine()
-            else
+            } else {
                 return false
+            }
         return true
     }
 
