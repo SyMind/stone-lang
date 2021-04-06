@@ -73,6 +73,12 @@ export class NumberLiteral extends ASTLeaf {
     }
 }
 
+export class StringLiteral extends ASTLeaf {
+    value(): string {
+        return this.token.getText()
+    }
+}
+
 export class Name extends ASTLeaf {
     name(): string {
         return this.token.getText()
@@ -90,3 +96,32 @@ export class BinaryExpr extends ASTList {
         return this.children[2]
     }
 }
+
+export class IfStmnt extends ASTList {
+    condition(): ASTree {
+        return this.child[0]
+    }
+    thenBlock(): ASTree {
+        return this.child[1]
+    }
+    elseBlock(): ASTree {
+        return this.numChildren() > 2 ? this.child(2) : null
+    }
+    toString(): string {
+        return `(if ${this.condition()} ${this.thenBlock()} else ${this.elseBlock()})`;
+    }
+}
+
+export class WhileStmnt extends ASTList {
+    condition(): ASTree {
+        return this.child(0)
+    }
+    body(): ASTree {
+        return this.child(1)
+    }
+    toString(): string {
+        return `(while ${this.condition()} ${this.body()})`;
+    }
+}
+
+export class NullStmnt extends ASTList {}
