@@ -104,7 +104,7 @@ export class Lexer {
 
     async read(): Promise<Token> {
         if (await this.fillQueue(0)) {
-            return this.queue.pop()
+            return this.queue.shift()
         }
         return Token.EOF
     }
