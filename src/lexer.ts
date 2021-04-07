@@ -1,9 +1,99 @@
-import {IdToken, NumToken, StrToken, Token} from './token'
+import os from 'os'
+import {StoneError, ParseError} from './errors'
 import {LineReader} from './lineReader'
-import {ParseError} from './parseError'
+
+export abstract class Token {
+    static readonly EOF = new class extends Token{}(-1)
+    static readonly EOL = os.EOL
+
+    private lineNumber: number
+
+    constructor(lineNum: number) {
+        this.lineNumber = lineNum
+    }
+
+    getLineNumber(): number {
+        return this.lineNumber
+    }
+
+    isIdentifier(): boolean {
+        return false
+    }
+
+    isNumber(): boolean {
+        return false
+    }
+
+    isString(): boolean {
+        return false
+    }
+
+    getNumber(): number {
+        throw new StoneError('not number token')
+    }
+
+    getText(): string {
+        return ''
+    }
+}
+
+export class NumToken extends Token {
+    private value: number
+
+    constructor(lineNum: number, v: number) {
+        super(lineNum)
+        this.value = v
+    }
+
+    isNumber(): boolean {
+        return true
+    }
+
+    getText(): string {
+        return this.value + ''
+    }
+
+    getNumber(): number {
+        return this.value
+    }
+}
+
+export class IdToken extends Token {
+    private text: string
+
+    constructor(lineNum: number, id: string) {
+        super(lineNum)
+        this.text = id
+    }
+
+    isIdentifier(): boolean {
+        return true
+    }
+
+    getText(): string {
+        return this.text
+    }
+}
+
+export class StrToken extends Token {
+    private literal: string
+
+    constructor(lineNum: number, str: string) {
+        super(lineNum)
+        this.literal = str
+    }
+
+    isString(): boolean {
+        return true
+    }
+
+    getText(): string {
+        return this.literal
+    }
+}
 
 export class Lexer {
-    pattern = '\\s*(?:(//.*)|([0-9]*)|("(?:\\"|\\\\\\|\\n|[^"])*")|([A-Z_a-z][A-Z_a-z0-9]*|==|<=|>=|&&|\\|\\|))?'
+    pattern = '\\s*(?:(//.*)|([0-9]*)|("(?:\\"|\\\\\\|\\n|[^"])*")|([A-Z_a-z][A-Z_a-z0-9]*|==|<=|>=|&&|\\|\\||\\(|\\)|\\*|\\+|-|/))?'
     queue: Token[] = []
     hasMore = true
     reader: LineReader
@@ -52,16 +142,16 @@ export class Lexer {
         const regExp = new RegExp(this.pattern, 'g')
         while (regExp.lastIndex < line.length) {
             const results = regExp.exec(line)
-            this.addToken(lineNo, results)
+            if (results[0]) {
+                this.addToken(lineNo, results)
+            } else {
+                throw new ParseError(`bad token at line ${lineNo}`)
+            }
         }
         return
     }
 
     protected addToken(lineNo: number, results: RegExpExecArray) {
-        if (results == null) {
-            return
-        }
-
         let token
         if (results[2] != null) {
             token = new NumToken(lineNo, parseInt(results[2], 10))
@@ -74,6 +164,4 @@ export class Lexer {
         }
         this.queue.push(token)
     }
-
-    protected toStringLiteral
 }

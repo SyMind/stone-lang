@@ -1,29 +1,9 @@
-const {Lexer} = require('../lib/lexer')
-const {Token} = require('../lib/token')
-
-class ContentsLineReader {
-    constructor(contents) {
-        this.lines = contents.split(Token.EOL)
-        this.lineNumber = -1
-    }
-
-    getLineNumber() {
-        return this.lineNumber
-    }
-
-    async nextLine() {
-        if (this.lineNumber >= this.lines.length) {
-            return Token.EOF
-        }
-
-        ++this.lineNumber
-        return this.lines[this.lineNumber]
-    }
-}
+const l = require('../lib/lexer')
+const {ContentsLineReader} = require('./utils')
 
 const expectStringLiteral = (contents, expected) => {
     test(contents, async () => {
-        const lexer = new Lexer(new ContentsLineReader(contents))
+        const lexer = new l.Lexer(new ContentsLineReader(contents))
         const token = await lexer.read()
         expect(token.isString()).toBe(true)
         expect(token.getText()).toBe(expected)
@@ -32,7 +12,7 @@ const expectStringLiteral = (contents, expected) => {
 
 const expectNumber = (contents, expected) => {
     test(contents, async () => {
-        const lexer = new Lexer(new ContentsLineReader(contents))
+        const lexer = new l.Lexer(new ContentsLineReader(contents))
         const token = await lexer.read()
         expect(token.isNumber()).toBe(true)
         expect(token.getNumber()).toBe(expected)
@@ -41,7 +21,7 @@ const expectNumber = (contents, expected) => {
 
 const expectIdentifier = (contents, expected) => {
     test(contents, async () => {
-        const lexer = new Lexer(new ContentsLineReader(contents))
+        const lexer = new l.Lexer(new ContentsLineReader(contents))
         const token = await lexer.read()
         expect(token.isIdentifier()).toBe(true)
         expect(token.getText()).toBe(expected)
@@ -60,5 +40,11 @@ describe('lexer', () => {
 
     describe('identifier', () => {
         expectIdentifier('abc', 'abc')
+        expectIdentifier('(', '(')
+        expectIdentifier(')', ')')
+        expectIdentifier('+', '+')
+        expectIdentifier('-', '-')
+        expectIdentifier('*', '*')
+        expectIdentifier('/', '/')
     })
 })

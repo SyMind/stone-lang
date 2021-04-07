@@ -1,4 +1,4 @@
-import {Token} from './token'
+import * as l from './lexer'
 
 export abstract class ASTree implements Iterable<ASTree> {
     abstract child(i: number): ASTree
@@ -9,8 +9,8 @@ export abstract class ASTree implements Iterable<ASTree> {
 
 export class ASTLeaf extends ASTree {
     private static empty: ASTree[] = []
-    protected token: Token
-    constructor(t: Token) {
+    protected token: l.Token
+    constructor(t: l.Token) {
         super()
         this.token = t
     }
@@ -27,7 +27,7 @@ export class ASTLeaf extends ASTree {
     toString(): string {
         return this.token.getText()
     }
-    getToken(): Token {
+    getToken(): l.Token {
         return this.token
     }
 }
@@ -108,7 +108,7 @@ export class IfStmnt extends ASTList {
         return this.numChildren() > 2 ? this.child(2) : null
     }
     toString(): string {
-        return `(if ${this.condition()} ${this.thenBlock()} else ${this.elseBlock()})`;
+        return `(if ${this.condition()} ${this.thenBlock()} else ${this.elseBlock()})`
     }
 }
 
@@ -120,7 +120,7 @@ export class WhileStmnt extends ASTList {
         return this.child(1)
     }
     toString(): string {
-        return `(while ${this.condition()} ${this.body()})`;
+        return `(while ${this.condition()} ${this.body()})`
     }
 }
 
