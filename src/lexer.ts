@@ -95,11 +95,14 @@ export class StrToken extends Token {
 export class Lexer {
     pattern = '\\s*(?:(//.*)|([0-9]*)|("(?:\\"|\\\\\\|\\n|[^"])*")|([A-Z_a-z][A-Z_a-z0-9]*|==|<=|>=|&&|\\|\\||\\(|\\)|\\*|\\+|-|/))?'
     queue: Token[] = []
-    hasMore = true
     reader: LineReader
 
     constructor(reader: LineReader) {
         this.reader = reader
+    }
+
+    hasNextLine(): boolean {
+        return this.reader.hasNextLine()
     }
 
     async read(): Promise<Token> {
@@ -117,12 +120,13 @@ export class Lexer {
     }
 
     protected async fillQueue(i: number): Promise<boolean> {
-        while (i >= this.queue.length)
-            if (this.hasMore) {
+        while (i >= this.queue.length) {
+            if (this.hasNextLine()) {
                 await this.readLine()
             } else {
                 return false
             }
+        }
         return true
     }
 
@@ -148,7 +152,7 @@ export class Lexer {
                 throw new ParseError(`bad token at line ${lineNo}`)
             }
         }
-        return
+        this.queue.push(new IdToken(lineNo, Token.EOL));
     }
 
     protected addToken(lineNo: number, results: RegExpExecArray) {

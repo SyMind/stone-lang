@@ -6,6 +6,10 @@ exports.ContentsLineReader = class ContentsLineReader {
         this.lineNumber = -1
     }
 
+    hasNextLine() {
+        return this.lineNumber < this.lines.length
+    }
+
     getLineNumber() {
         return this.lineNumber
     }
