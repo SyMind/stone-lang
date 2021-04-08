@@ -48,6 +48,10 @@ export class LineReader {
         return this.lineNumber
     }
 
+    hasNextLine(): boolean {
+        return this.reader.hasNextLine()
+    }
+
     async nextLine(): Promise<string> {
         if (!this.reader) {
             this.reader = await createReader(this.filename)

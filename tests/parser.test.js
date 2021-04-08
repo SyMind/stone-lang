@@ -1,6 +1,6 @@
 const p = require('../lib/parser')
 const l = require('../lib/lexer')
-const {ASTLeaf} = require('../lib/ast')
+const {BinaryExpr, ASTLeaf, Name} = require('../lib/ast')
 const {ContentsLineReader} = require('./utils')
 
 async function expectASTList(combinator, contents, expected) {
@@ -9,10 +9,7 @@ async function expectASTList(combinator, contents, expected) {
     await combinator.parse(lexer, astList)
     expect(astList.length).toBe(expected.length)
     for (let i = 0; i < astList.length; i++) {
-        expect(astList[i].constructor).toBe(expected[i].constructor)
-        if (astList[i] instanceof ASTLeaf) {
-            expect(astList[i].token).toEqual(expected[i].token)
-        }
+        expect(astList[i].toString()).toEqual(expected[i])
     }
 }
 
@@ -23,12 +20,20 @@ describe('element', () => {
         await expectASTList(new p.Skip(['(']), '(', [])
     })
     it('id token', async () => {
-        await expectASTList(new p.IdToken(ASTLeaf, reserved), 'foo', [new ASTLeaf(new l.IdToken(0, 'foo'))])
+        await expectASTList(new p.IdToken(ASTLeaf, reserved), 'foo', ['foo'])
     })
     it('num token', async () => {
-        await expectASTList(new p.NumToken(ASTLeaf, reserved), '10', [new ASTLeaf(new l.NumToken(0, 10))])
+        await expectASTList(new p.NumToken(ASTLeaf, reserved), '10', ['10'])
     })
     it('str token', async () => {
-        await expectASTList(new p.StrToken(ASTLeaf, reserved), '"hello,world"', [new ASTLeaf(new l.StrToken(0, 'hello,world'))])
+        await expectASTList(new p.StrToken(ASTLeaf, reserved), '"hello,world"', ['hello,world'])
+    })
+    it('expr', async () => {
+        const factor = p.rule().identifier(Name, reserved)
+        const operators = new p.Operators()
+        operators.add('+', 3, p.Operators.LEFT)
+        operators.add('*', 4, p.Operators.LEFT)
+        await expectASTList(new p.Expr(BinaryExpr, factor, operators), 'a + b', ['((a) + (b))'])
+        await expectASTList(new p.Expr(BinaryExpr, factor, operators), 'a + b * c', ['((a) + ((b) * (c)))'])
     })
 })

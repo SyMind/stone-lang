@@ -2,8 +2,9 @@ import {ASTree, ASTList, ASTLeaf} from './ast'
 import * as l from './lexer'
 import {ParseError} from './errors'
 
-type ASTreeDerivedCtor = new (...args: any) => ASTree
-type ASTLeafDerivedCtor = new (...args: any) => ASTLeaf
+type ASTreeSubCtor = new (...args: any) => ASTree
+type ASTListSubCtor = new (...args: any) => ASTList
+type ASTLeafSubCtor = new (...args: any) => ASTLeaf
 
 export class Precedence {
     value: number
@@ -15,13 +16,18 @@ export class Precedence {
     }
 }
 
-export class Operators extends Map<String, Precedence> {
+export class Operators {
     static LEFT = true
     static RIGHT = false
-
+    private map: Map<String, Precedence>
+    constructor(entries?: readonly (readonly [String, Precedence])[]) {
+        this.map = new Map(entries);
+    }
     add(name: string, prec: number, leftAssoc: boolean): void {
-        this.set(name, new Precedence(prec, leftAssoc))
-        this.set
+        this.map.set(name, new Precedence(prec, leftAssoc))
+    }
+    get(name: string): Precedence {
+        return this.map.get(name)
     }
 }
 
@@ -30,11 +36,11 @@ abstract class Element {
     abstract match(lexer: l.Lexer): Promise<boolean>
 }
 
-class Expr extends Element {
+export class Expr extends Element {
     factory: Factory
     factor: Parser
     ops: Operators
-    constructor(ctor: ASTreeDerivedCtor, exp: Parser, map: Operators) {
+    constructor(ctor: ASTListSubCtor, exp: Parser, map: Operators) {
         super()
         this.factory = Factory.getForASTList(ctor)
         this.factor = exp
@@ -184,7 +190,7 @@ export class Skip extends Leaf {
 
 abstract class AToken extends Element {
     factory: Factory
-    constructor(ctor: ASTLeafDerivedCtor) {
+    constructor(ctor: ASTLeafSubCtor) {
         super()
         if (ctor === null) {
             ctor = ASTLeaf
@@ -209,7 +215,7 @@ abstract class AToken extends Element {
 
 export class IdToken extends AToken {
     reserved: Set<string>
-    constructor(ctor: ASTLeafDerivedCtor, reserved: Set<string>) {
+    constructor(ctor: ASTLeafSubCtor, reserved: Set<string>) {
         super(ctor)
         this.reserved = reserved !== null ? reserved : new Set<string>()
     }
@@ -237,11 +243,23 @@ export abstract class Factory {
     }
 
     static readonly factoryName = 'create'
-    static getForASTList(ctor: ASTreeDerivedCtor): Factory {
-        // Factory f = this.get(ctor, List.class)
-        return null
+    static getForASTList(ctor: ASTreeSubCtor): Factory {
+        let f = this.get(ctor)
+        if (f == null) {
+            f = new class extends Factory {
+                make0(arg: any): ASTree {
+                    const results = arg as ASTree[]
+                    if (results.length === 1) {
+                        return results[0]
+                    } else {
+                        return new ASTList(results)
+                    }
+                }
+            }
+        }
+        return f
     }
-    static get<T>(ctor: ASTreeDerivedCtor): Factory {
+    static get<T>(ctor: ASTreeSubCtor): Factory {
         if (ctor == null) {
             return null
         }
@@ -267,7 +285,7 @@ export class Parser {
     elements: Element[] = []
     factory: Factory
 
-    constructor(pOrCtor: ASTreeDerivedCtor | Parser) {
+    constructor(pOrCtor: ASTreeSubCtor | Parser) {
         if (pOrCtor instanceof Parser) {
             this.elements = pOrCtor.elements
             this.factory = pOrCtor.factory
@@ -277,17 +295,21 @@ export class Parser {
     }
 
     parse(l: l.Lexer): ASTree {
-        return null
+        const results: ASTree[] = []
+        for (const e of this.elements) {
+            e.parse(l, results)
+        }
+        return this.factory.make(results)
     }
 
-    number(ctor: ASTLeafDerivedCtor = null): Parser {
+    number(ctor: ASTLeafSubCtor = null): Parser {
         this.elements.push(new NumToken(ctor))
         return this
     }
 
     identifier(reserved: Set<string>): Parser
-    identifier(ctor: ASTLeafDerivedCtor, reserved: Set<string>)
-    identifier(ctorOrReserved: ASTLeafDerivedCtor | Set<string>, reserved?: Set<string>): Parser {
+    identifier(ctor: ASTLeafSubCtor, reserved: Set<string>)
+    identifier(ctorOrReserved: ASTLeafSubCtor | Set<string>, reserved?: Set<string>): Parser {
         if (ctorOrReserved instanceof Set) {
             this.identifier(null, ctorOrReserved)
         } else {
@@ -296,7 +318,7 @@ export class Parser {
         return this
     }
 
-    string(ctor: ASTLeafDerivedCtor = null): Parser {
+    string(ctor: ASTLeafSubCtor = null): Parser {
         this.elements.push(new StrToken(ctor))
         return this
     }
@@ -327,26 +349,20 @@ export class Parser {
     }
 
     expression(p: Parser, ops: Operators): Parser
-    expression(ctor: ASTreeDerivedCtor, p: Parser, ops: Operators): Parser
-    expression(ctorOrParser: ASTreeDerivedCtor | Parser, parserOrOperators: Parser | Operators, ops?: Operators): Parser {
+    expression(ctor: ASTreeSubCtor, p: Parser, ops: Operators): Parser
+    expression(ctorOrParser: ASTreeSubCtor | Parser, parserOrOperators: Parser | Operators, ops?: Operators): Parser {
         if (ctorOrParser instanceof Parser && parserOrOperators instanceof Operators) {
             this.elements.push(new Expr(null, ctorOrParser, parserOrOperators))
         } else {
-            this.elements.push(new Expr(ctorOrParser as ASTreeDerivedCtor, parserOrOperators as Parser, ops))
+            this.elements.push(new Expr(ctorOrParser as ASTListSubCtor, parserOrOperators as Parser, ops))
         }
         return this
     }
 
-    reset(ctor?: ASTreeDerivedCtor) {
+    reset(ctor?: ASTreeSubCtor) {
         this.elements = []
-        if (ctor != null) {
-            this.factory = Factory.getForASTList(ctor)
-        }
+        this.factory = Factory.getForASTList(ctor)
         return this
-    }
-
-    insertChoice(p: Parser) {
-
     }
 
     async match(lexer: l.Lexer): Promise<boolean> {
@@ -359,6 +375,6 @@ export class Parser {
     }
 }
 
-export function rule(ctor: ASTreeDerivedCtor = null) {
+export function rule(ctor: ASTreeSubCtor = null) {
     return new Parser(ctor)
 }
