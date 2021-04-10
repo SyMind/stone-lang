@@ -47,7 +47,7 @@ export class Expr extends Element {
         this.ops = map
     }
     async parse(lexer: l.Lexer, res: ASTree[]): Promise<void> {
-        let right = this.factor.parse(lexer)
+        let right = await this.factor.parse(lexer)
         let prec: Precedence
         while ((prec = await this.nextOperator(lexer)) != null) {
             right = await this.doShift(lexer, right, prec.value)
@@ -65,7 +65,7 @@ export class Expr extends Element {
         const list: ASTree[] = []
         list.push(left)
         list.push(new ASTLeaf(await lexer.read()))
-        let right = this.factor.parse(lexer)
+        let right = await this.factor.parse(lexer)
         let next: Precedence
         while ((next = await this.nextOperator(lexer)) != null && this.rightIsExpr(prec, next)) {
             right = await this.doShift(lexer, right, next.value)
@@ -89,7 +89,7 @@ class Tree extends Element {
         this.parser = p
     }
     async parse(lexer: l.Lexer, res: ASTree[]): Promise<void> {
-        res.push(this.parser.parse(lexer))
+        res.push(await this.parser.parse(lexer))
     }
     async match(lexer: l.Lexer): Promise<boolean> {
         return await this.parser.match(lexer)
@@ -107,14 +107,14 @@ class OrTree extends Element {
         if (p == null) {
             throw new ParseError(await lexer.peek(0).toString())
         }
-        res.push(p.parse(lexer))
+        res.push(await p.parse(lexer))
     }
     async match(lexer: l.Lexer): Promise<boolean> {
         return this.choose(lexer) != null
     }
     async choose(lexer: l.Lexer): Promise<Parser> {
         for (const p of this.parsers) {
-            if (p.match(lexer)) {
+            if (await p.match(lexer)) {
                 return p
             }
         }
@@ -132,7 +132,7 @@ class Repeat extends Element {
     }
     async parse(lexer: l.Lexer, res: ASTree[]): Promise<void> {
         while (this.match(lexer)) {
-            const t = this.parser.parse(lexer)
+            const t = await this.parser.parse(lexer)
             if (!(t instanceof ASTList) || t.numChildren() > 0) {
                 res.push(t)
             }
@@ -294,10 +294,10 @@ export class Parser {
         }
     }
 
-    parse(l: l.Lexer): ASTree {
+    async parse(l: l.Lexer): Promise<ASTree> {
         const results: ASTree[] = []
         for (const e of this.elements) {
-            e.parse(l, results)
+            await e.parse(l, results)
         }
         return this.factory.make(results)
     }

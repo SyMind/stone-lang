@@ -1,39 +1,44 @@
 const p = require('../lib/parser')
 const l = require('../lib/lexer')
-const {BinaryExpr, ASTLeaf, Name} = require('../lib/ast')
+const {Name, NumberLiteral, StringLiteral} = require('../lib/ast')
 const {ContentsLineReader} = require('./utils')
 
-async function expectASTList(combinator, contents, expected) {
+async function expectASTList(parser, contents, expected) {
     const lexer = new l.Lexer(new ContentsLineReader(contents))
-    const astList = []
-    await combinator.parse(lexer, astList)
-    expect(astList.length).toBe(expected.length)
-    for (let i = 0; i < astList.length; i++) {
-        expect(astList[i].toString()).toEqual(expected[i])
-    }
+    const ast = await parser.parse(lexer)
+    expect(ast.toString()).toBe(expected)
 }
 
 const reserved = new Set([',', '}', l.Token.EOL])
 
 describe('element', () => {
-    it('skip', async () => {
-        await expectASTList(new p.Skip(['(']), '(', [])
+    it('sep', async () => {
+        await expectASTList(p.rule().sep('('), '(', '()')
     })
     it('id token', async () => {
-        await expectASTList(new p.IdToken(ASTLeaf, reserved), 'foo', ['foo'])
+        await expectASTList(p.rule().identifier(reserved), 'foo', 'foo')
     })
     it('num token', async () => {
-        await expectASTList(new p.NumToken(ASTLeaf, reserved), '10', ['10'])
+        await expectASTList(p.rule().number(), '10', '10')
     })
     it('str token', async () => {
-        await expectASTList(new p.StrToken(ASTLeaf, reserved), '"hello,world"', ['hello,world'])
+        await expectASTList(new p.rule().string(), '"hello,world"', 'hello,world')
     })
     it('expr', async () => {
         const factor = p.rule().identifier(Name, reserved)
         const operators = new p.Operators()
         operators.add('+', 3, p.Operators.LEFT)
         operators.add('*', 4, p.Operators.LEFT)
-        await expectASTList(new p.Expr(BinaryExpr, factor, operators), 'a + b', ['((a) + (b))'])
-        await expectASTList(new p.Expr(BinaryExpr, factor, operators), 'a + b * c', ['((a) + ((b) * (c)))'])
+        await expectASTList(new p.rule().expression(factor, operators), 'a + b', '(a + b)')
+        await expectASTList(new p.rule().expression(factor, operators), 'a + b * c', '(a + (b * c))')
+    })
+    it('or', async () => {
+        const reserved = new Set([',', '}', l.Token.EOL])
+        const primary = p.rule().or(
+            p.rule().number(NumberLiteral),
+            p.rule().identifier(Name, reserved),
+            p.rule().string(StringLiteral)
+        )
+        await expectASTList(primary, 'a', 'a')
     })
 })
