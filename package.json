@@ -1,5 +1,5 @@
 {
-  "name": "stone",
+  "name": "stone-lang",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -23,13 +23,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SyMind/stone.git"
+    "url": "git+https://github.com/SyMind/stone-lang.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/SyMind/stone/issues"
+    "url": "https://github.com/SyMind/stone-lang/issues"
   },
-  "homepage": "https://github.com/SyMind/stone#readme"
+  "homepage": "https://github.com/SyMind/stone-lang#README.md"
 }
