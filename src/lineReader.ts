@@ -35,7 +35,13 @@ const closeReader = (reader: Reader): Promise<void> =>
 
     })
 
-export class LineReader {
+export interface LineReader {
+    getLineNumber(): number
+    hasNextLine(): boolean
+    nextLine(): Promise<string>
+}
+
+export class FileLineReader {
     private readonly filename: string
     private reader: Reader
     private lineNumber: number = -1

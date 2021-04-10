@@ -1,7 +1,7 @@
-const l = require('../lib/lexer')
-const {ContentsLineReader} = require('./utils')
+import * as l from '../src/lexer'
+import {ContentsLineReader} from './utils'
 
-const expectStringLiteral = (contents, expected) => {
+const expectStringLiteral = (contents: string, expected: string): void => {
     test(contents, async () => {
         const lexer = new l.Lexer(new ContentsLineReader(contents))
         const token = await lexer.read()
@@ -10,7 +10,7 @@ const expectStringLiteral = (contents, expected) => {
     })
 }
 
-const expectNumber = (contents, expected) => {
+const expectNumber = (contents: string, expected: number): void => {
     test(contents, async () => {
         const lexer = new l.Lexer(new ContentsLineReader(contents))
         const token = await lexer.read()
@@ -19,7 +19,7 @@ const expectNumber = (contents, expected) => {
     })
 }
 
-const expectIdentifier = (contents, expected) => {
+const expectIdentifier = (contents: string, expected: string): void => {
     test(contents, async () => {
         const lexer = new l.Lexer(new ContentsLineReader(contents))
         const token = await lexer.read()

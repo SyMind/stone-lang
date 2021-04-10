@@ -1,6 +1,10 @@
-const l = require('../lib/lexer')
+import * as l from '../lib/lexer'
+import {LineReader} from '../src/lineReader'
 
-exports.ContentsLineReader = class ContentsLineReader {
+export class ContentsLineReader implements LineReader {
+    lines: string[]
+    lineNumber: number
+
     constructor(contents) {
         this.lines = contents.split(l.Token.EOL)
         this.lineNumber = -1

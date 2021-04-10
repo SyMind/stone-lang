@@ -1,6 +1,6 @@
-const p = require('../lib/parser')
-const l = require('../lib/lexer')
-const {Name, NumberLiteral, StringLiteral} = require('../lib/ast')
+const p = require('../src/parser')
+const l = require('../src/lexer')
+const {Name, NumberLiteral, StringLiteral} = require('../src/ast')
 const {ContentsLineReader} = require('./utils')
 
 async function expectASTList(parser, contents, expected) {
