@@ -60,7 +60,7 @@ export class ASTList extends ASTree {
     }
     toString(): string {
         let ss: string[] = []
-        for (const child of  this.children) {
+        for (const child of this.children) {
             ss.push(child.toString())
         }
         return `(${ss.join(' ')})`
@@ -99,10 +99,10 @@ export class BinaryExpr extends ASTList {
 
 export class IfStmnt extends ASTList {
     condition(): ASTree {
-        return this.child[0]
+        return this.child(0)
     }
     thenBlock(): ASTree {
-        return this.child[1]
+        return this.child(1)
     }
     elseBlock(): ASTree {
         return this.numChildren() > 2 ? this.child(2) : null

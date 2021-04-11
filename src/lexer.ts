@@ -93,7 +93,7 @@ export class StrToken extends Token {
 }
 
 export class Lexer {
-    pattern = '\\s*(?:(//.*)|([0-9]*)|("(?:\\"|\\\\\\|\\n|[^"])*")|([A-Z_a-z][A-Z_a-z0-9]*|==|<=|>=|&&|\\|\\||\\(|\\)|\\*|\\+|-|/))?'
+    pattern = '\\s*(?:(//.*)|([0-9]*)|("(?:\\"|\\\\\\|\\n|[^"])*")|([A-Z_a-z][A-Z_a-z0-9]*|==|=|<=|>=|<|>|&&|\\|\\||\\(|\\)|\\*|\\+|-|/|{|}|%))?'
     queue: Token[] = []
     reader: LineReader
 
@@ -156,16 +156,17 @@ export class Lexer {
     }
 
     protected addToken(lineNo: number, results: RegExpExecArray) {
-        let token
         if (results[2] != null) {
-            token = new NumToken(lineNo, parseInt(results[2], 10))
+            let token = new NumToken(lineNo, parseInt(results[2], 10))
+            this.queue.push(token)
         } else if (results[3] != null) {
             const raw = results[3]
             const str = raw.substring(1, raw.length - 1)
-            token = new StrToken(lineNo, str)
+            let token = new StrToken(lineNo, str)
+            this.queue.push(token)
         } else if (results[4] != null) {
-            token = new IdToken(lineNo, results[4])
+            let token = new IdToken(lineNo, results[4])
+            this.queue.push(token)
         }
-        this.queue.push(token)
     }
 }

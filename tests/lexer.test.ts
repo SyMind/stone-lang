@@ -28,6 +28,19 @@ const expectIdentifier = (contents: string, expected: string): void => {
     })
 }
 
+const expectError = (contents: string, expected: string): void => {
+    test(contents, async () => {
+        const lexer = new l.Lexer(new ContentsLineReader(contents))
+        let error
+        try {
+            await lexer.read()
+        } catch (err) {
+            error = err
+        }
+        expect(error.message).toBe('bad token at line 0')
+    })
+}
+
 describe('lexer', () => {
     describe('string literal', () => {
         expectStringLiteral('"123"', '123')
@@ -40,11 +53,22 @@ describe('lexer', () => {
 
     describe('identifier', () => {
         expectIdentifier('abc', 'abc')
+        expectIdentifier('{', '{')
+        expectIdentifier('}', '}')
         expectIdentifier('(', '(')
         expectIdentifier(')', ')')
         expectIdentifier('+', '+')
         expectIdentifier('-', '-')
         expectIdentifier('*', '*')
         expectIdentifier('/', '/')
+        expectIdentifier('=', '=')
+        expectIdentifier('==', '==')
+        expectIdentifier('>', '>')
+        expectIdentifier('<', '<')
+        expectIdentifier('>=', '>=')
+        expectIdentifier('<=', '<=')
+        expectIdentifier('while', 'while')
+
+        expectError('#', 'bad token at line 0')
     })
 })

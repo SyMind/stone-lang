@@ -105,12 +105,13 @@ class OrTree extends Element {
     async parse(lexer: l.Lexer, res: ASTree[]): Promise<void> {
         const p = await this.choose(lexer)
         if (p == null) {
-            throw new ParseError(await lexer.peek(0).toString())
+            const t = await lexer.peek(0)
+            throw new ParseError(`unexpected ${t.getText()}.`)
         }
         res.push(await p.parse(lexer))
     }
     async match(lexer: l.Lexer): Promise<boolean> {
-        return this.choose(lexer) != null
+        return await this.choose(lexer) != null
     }
     async choose(lexer: l.Lexer): Promise<Parser> {
         for (const p of this.parsers) {
@@ -131,7 +132,7 @@ class Repeat extends Element {
         this.onlyOnce = onlyOnce
     }
     async parse(lexer: l.Lexer, res: ASTree[]): Promise<void> {
-        while (this.match(lexer)) {
+        while (await this.match(lexer)) {
             const t = await this.parser.parse(lexer)
             if (!(t instanceof ASTList) || t.numChildren() > 0) {
                 res.push(t)
@@ -165,7 +166,7 @@ class Leaf extends Element {
         if (this.tokens.length > 0) {
             throw new ParseError(`${this.tokens[0]} expected.`)
         } else {
-            throw new ParseError(t.toString())
+            throw new ParseError(t.getText())
         }
     }
     find(res: ASTree[], t: l.Token): void {
@@ -366,7 +367,7 @@ export class Parser {
     }
 
     async match(lexer: l.Lexer): Promise<boolean> {
-        if (this.elements.length == 0) {
+        if (this.elements.length === 0) {
             return true
         } else {
             const e = this.elements[0]
