@@ -1,6 +1,6 @@
-import * as p from './parser';
+import * as p from './parser'
 import * as l from './lexer'
-import {ASTree, BinaryExpr, IfStmnt, WhileStmnt, NullStmnt, NumberLiteral, Name, StringLiteral} from './ast'
+import {ASTree, BinaryExpr, IfStmnt, WhileStmnt, NullStmnt, NumberLiteral, Name, StringLiteral, BlockStmnt} from './ast'
 
 export class BasicParser {
     reserved = new Set<string>()
@@ -39,7 +39,7 @@ export class BasicParser {
         expr.expression(BinaryExpr, factor, this.operators)
         // block     : "{" [ statement ] {(";" | EOL) [ statement ]} "}"
         const statement = p.rule()
-        const block = p.rule().sep('{').option(statement).repeat(
+        const block = p.rule(BlockStmnt).sep('{').option(statement).repeat(
             p.rule().sep(';', l.Token.EOL).option(statement)
         ).sep('}')
         // simple    : expr
