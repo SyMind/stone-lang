@@ -7,8 +7,8 @@ export class BasicParser {
     operators = new p.Operators()
 
     // primary   : "(" expr ")" | NUMBER | IDENTIFIER | STRING
-    expr0 = p.rule(PrimaryExpr)
-    primary = p.rule().or(
+    expr0 = p.rule()
+    primary = p.rule(PrimaryExpr).or(
         p.rule().sep('(').ast(this.expr0).sep(')'),
         p.rule().number(NumberLiteral),
         p.rule().identifier(Name, this.reserved),
