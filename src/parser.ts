@@ -97,7 +97,7 @@ class Tree extends Element {
 }
 
 class OrTree extends Element {
-    parsers: Parser[]
+    protected parsers: Parser[]
     constructor(parsers: Parser[]) {
         super()
         this.parsers = parsers
@@ -120,6 +120,9 @@ class OrTree extends Element {
             }
         }
         return null
+    }
+    insert(p: Parser) {
+        this.parsers.unshift(p)
     }
 }
 
@@ -283,8 +286,8 @@ export abstract class Factory {
 }
 
 export class Parser {
-    elements: Element[] = []
-    factory: Factory
+    protected elements: Element[] = []
+    protected factory: Factory
 
     constructor(pOrCtor: ASTreeSubCtor | Parser) {
         if (pOrCtor instanceof Parser) {
@@ -344,6 +347,13 @@ export class Parser {
         return this
     }
 
+    maybe(p: Parser): Parser {
+        const p2 = new Parser(p)
+        p2.reset()
+        this.elements.push(new OrTree([p, p2]))
+        return this
+    }
+
     repeat(p: Parser): Parser {
         this.elements.push(new Repeat(p, false))
         return this
@@ -360,7 +370,19 @@ export class Parser {
         return this
     }
 
-    reset(ctor?: ASTreeSubCtor) {
+    insertChoice(p: Parser): Parser {
+        const e = this.elements[0]
+        if (e instanceof OrTree) {
+            e.insert(p)
+        } else {
+            const otherwise = new Parser(this)
+            this.reset(null)
+            this.or(p, otherwise)
+        }
+        return this
+    }
+
+    reset(ctor?: ASTreeSubCtor): Parser {
         this.elements = []
         this.factory = Factory.getForASTList(ctor)
         return this

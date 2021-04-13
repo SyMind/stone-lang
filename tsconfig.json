@@ -3,6 +3,7 @@
         "module":"commonjs",
         "esModuleInterop": true,
         "target": "es5",
+        "downlevelIteration": true,
         "moduleResolution": "node",
         "outDir": "lib",
         "sourceMap": true
