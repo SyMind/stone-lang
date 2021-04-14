@@ -137,7 +137,7 @@ class Repeat extends Element {
     async parse(lexer: l.Lexer, res: ASTree[]): Promise<void> {
         while (await this.match(lexer)) {
             const t = await this.parser.parse(lexer)
-            if (!(t instanceof ASTList) || t.numChildren() > 0) {
+            if (Reflect.get(t, 'constructor') !== ASTList || t.numChildren() > 0) {
                 res.push(t)
             }
             if (this.onlyOnce) {
@@ -268,7 +268,7 @@ export abstract class Factory {
             return null
         }
 
-        const make = Reflect.get(ctor, 'make')
+        const make = Reflect.get(ctor, this.factoryName)
         if (typeof make === 'function') {
             return new class extends Factory {
                 make0(arg: T): ASTree {
@@ -384,11 +384,14 @@ export class Parser {
 
     reset(ctor?: ASTreeSubCtor): Parser {
         this.elements = []
-        this.factory = Factory.getForASTList(ctor)
+        if (ctor !== undefined) {
+            this.factory = Factory.getForASTList(ctor)
+        }
         return this
     }
 
     async match(lexer: l.Lexer): Promise<boolean> {
+        const c = await lexer.peek(0)
         if (this.elements.length === 0) {
             return true
         } else {

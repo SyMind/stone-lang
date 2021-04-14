@@ -1,21 +1,20 @@
 import * as l from '../src/lexer'
-import {FuncParser} from '../src/funcParser'
+import {ClosureParser} from '../src/closureParser'
 import {NestedEnv} from '../src/env'
 import {ContentsLineReader} from './utils'
 
 test('func parser', async () => {
     const reader = new ContentsLineReader(
-        `def fib (n) {
-            if n < 2 {
-                n
-            } else {
-                fib(n - 1) + fib(n - 2)
+        `def counter (c) {
+            func () {
+                c = c + 10
             }
         }
-        fib(10)`
+        c1 = counter(0)
+        c1()`
     )
     const lexer = new l.Lexer(reader)
-    const parser = new FuncParser()
+    const parser = new ClosureParser()
     const env = new NestedEnv()
     let stringify = ''
     let result
@@ -24,6 +23,6 @@ test('func parser', async () => {
         result = ast.eval(env)
         stringify += ast.toString()
     }
-    expect(stringify).toBe('(def fib (n) ((if ((n) < (2)) ((n)) else (((fib (((n) - (1)))) + (fib (((n) - (2)))))))))(fib ((10)))')
-    expect(result).toBe(55)
+    expect(stringify).toBe('(def counter (c) ((func () ((c = (c + 10))))))(c1 = (counter (0)))(c1 ())')
+    expect(result).toBe(10)
 })

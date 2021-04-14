@@ -48,6 +48,9 @@ export class ASTList extends ASTree {
         super()
         this.children = list
     }
+    size() {
+        return this.children.length
+    }
     child(i: number): ASTree {
         return this.children[i]
     }
@@ -342,5 +345,20 @@ export class PrimaryExpr extends ASTList {
         else {
             return this.operand().eval(env)
         }
+    }
+}
+
+export class Func extends ASTList {
+    parameters(): ParameterList {
+        return this.child(0) as ParameterList
+    }
+    body(): BlockStmnt {
+        return this.child(1) as BlockStmnt
+    }
+    toString(): string {
+        return `(func ${this.parameters()} ${this.body()})`
+    }
+    eval(env: NestedEnv) {
+        return new Function(this.parameters(), this.body(), env)
     }
 }

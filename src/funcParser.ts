@@ -8,9 +8,9 @@ export class FuncParser extends BasicParser {
     // params      : param { "," param }
     params = p.rule(a.ParameterList).ast(this.param).repeat(p.rule().sep(',').ast(this.param))
     // param_list  : "(" [ params ] ")"
-    paramsList = p.rule().sep('(').maybe(this.params).sep(')')
+    paramList = p.rule().sep('(').maybe(this.params).sep(')')
     // def         : "def" IDENTIFIER param_list block
-    def = p.rule(a.DefStmnt).sep('def').identifier(this.reserved).ast(this.paramsList).ast(this.block)
+    def = p.rule(a.DefStmnt).sep('def').identifier(this.reserved).ast(this.paramList).ast(this.block)
     // args        : expr { "," expr }
     args = p.rule(a.Arguments as any).ast(this.expr).repeat(p.rule().sep(',').ast(this.expr))
     // postfix     : "(" [ args ] ")"
