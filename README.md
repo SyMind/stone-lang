@@ -40,6 +40,13 @@ simple      : expr [ args ]
 porgram     : [ def | statement ] (";" | EOL)
 ```
 
+### Closure Parser
+
+```
+primary     : " func " param_list block
+            | 原本的 primary 定义
+```
+
 ## License
 
 [MIT](https://github.com/SyMind/stone/blob/main/LICENSE)
