@@ -259,7 +259,7 @@ export class ParameterList extends ASTList {
     }
 }
 
-export class Function {
+export class StoneFunction {
     parameters: ParameterList
     body: BlockStmnt
     env: NestedEnv
@@ -290,7 +290,7 @@ export class DefStmnt extends ASTList {
         return `(def ${this.name()} ${this.parameters()} ${this.body()})`
     }
     eval(env: NestedEnv): Primitive {
-        env.putNew(this.name(), new Function(this.parameters(), this.body(), env))
+        env.putNew(this.name(), new StoneFunction(this.parameters(), this.body(), env))
         return this.name()
     }
 }
@@ -299,15 +299,55 @@ export abstract class Postfix extends ASTList {
     abstract eval(env: Env, value?: Primitive): Primitive
 }
 
+export class NativeFunction {
+    protected method: Function
+    protected name: string
+    protected numParams: number
+    constructor(n: string, m: Function, paramsLen: number) {
+        this.name = n
+        this.method = m
+        this.numParams = paramsLen
+    }
+    toString(): string {
+        return '<native>'
+    }
+    numOfParameters(): number {
+        return this.numParams
+    }
+    invoke(args: any[]) {
+        try {
+            return this.method.apply(null, args);
+        } catch (err) {
+            throw new StoneError("bad native function call: " + this.name);
+        }
+    }
+}
+
 export class Arguments extends Postfix {
     size(): number {
         return this.numChildren()
     }
+    evalNative(callerEnv: Env, value: Primitive): Primitive {
+        const func = value as NativeFunction
+        const nparams = func.numOfParameters()
+        if (this.size() !== nparams)
+            throw new StoneError('bad number of arguments')
+        const args = []
+        let num = 0
+        for (const a of this) {
+            args[num++] = a.eval(callerEnv)
+        }
+        return func.invoke(args)
+    }
     eval(callerEnv: Env, value: Primitive): Primitive {
-        if (!(value instanceof Function)) {
+        if (value instanceof NativeFunction) {
+            return this.evalNative(callerEnv, value)
+        }
+
+        if (!(value instanceof StoneFunction)) {
             throw new StoneError('bad function')
         }
-        const func = value as Function
+        const func = value as StoneFunction
         const params = func.parameters
         if (this.children.length !== params.size()) {
             throw new StoneError('bad number of arguments')
@@ -359,6 +399,6 @@ export class Func extends ASTList {
         return `(func ${this.parameters()} ${this.body()})`
     }
     eval(env: NestedEnv) {
-        return new Function(this.parameters(), this.body(), env)
+        return new StoneFunction(this.parameters(), this.body(), env)
     }
 }
