@@ -131,8 +131,25 @@ export class BinaryExpr extends ASTList {
             return this.computeOp(left, op, right)
         }
     }
+    setField(obj: StoneObject, expr: Dot, rvalue: Primitive): Primitive {
+        const name = expr.name()
+        try {
+            obj.write(name, rvalue)
+            return rvalue
+        } catch {
+            throw new StoneError(`bad member access ${this.location()}: ${name}`)
+        }
+    }
     protected computeAssign(env: Env, rValue: Primitive): Primitive {
         const left = this.left()
+        if (left instanceof PrimaryExpr) {
+            if (left.hasPostfix(0) && left.postfix(0) instanceof Dot) {
+                const t = left.evalSubExpr(env, 1)
+                if (t instanceof StoneObject) {
+                    return this.setField(t, left.postfix(0) as Dot, rValue)
+                }
+            }
+        }
         if (left instanceof Name) {
             env.put(left.name(), rValue)
             return rValue
@@ -316,9 +333,9 @@ export class NativeFunction {
     }
     invoke(args: any[]) {
         try {
-            return this.method.apply(null, args);
+            return this.method.apply(null, args)
         } catch (err) {
-            throw new StoneError("bad native function call: " + this.name);
+            throw new StoneError("bad native function call: " + this.name)
         }
     }
 }
@@ -357,7 +374,7 @@ export class Arguments extends Postfix {
         for (const a of this) {
             params.eval(newEnv, index++, a.eval(callerEnv))
         }
-        return func.body.eval(newEnv);
+        return func.body.eval(newEnv)
     }
 }
 
@@ -400,5 +417,133 @@ export class Func extends ASTList {
     }
     eval(env: NestedEnv) {
         return new StoneFunction(this.parameters(), this.body(), env)
+    }
+}
+
+export class ClassBody extends ASTList {
+    eval(env: NestedEnv): Primitive {
+        for (const child of this.children) {
+            child.eval(env)
+        }
+        return null
+    }
+}
+
+export class ClassStmnt extends ASTList {
+    name(): string {
+        return (this.child(0) as ASTLeaf).getToken().getText()
+    }
+    superClass(): string {
+        if (this.numChildren() < 3) {
+            return null
+        }
+        return (this.child(1) as ASTLeaf).getToken().getText()
+    }
+    body(): ClassBody {
+        return (this.child(this.numChildren() - 1) as ClassBody)
+    }
+    toString(): string {
+        let parent = this.superClass()
+        if (parent == null) {
+            parent = '*'
+        }
+        return `(class ${this.name()} ${parent} ${this.body()})`
+    }
+    eval(env: NestedEnv): Primitive {
+        const ci = new ClassInfo(this, env)
+        env.put(this.name(), ci)
+        return this.name()
+    }
+}
+
+export class ClassInfo {
+    definition: ClassStmnt
+    env: NestedEnv
+    superClass: ClassInfo = null
+    constructor(cs: ClassStmnt, env: NestedEnv) {
+        this.definition = cs
+        this.env = env
+        const superClass = env.get(cs.superClass())
+        if (superClass instanceof ClassInfo) {
+            this.superClass = env.get(cs.superClass()) as ClassInfo
+        }
+    }
+    name(): string {
+        return this.definition.name()
+    }
+    getSuperClass(): ClassInfo {
+        return this.superClass
+    }
+    body(): ClassBody {
+        return this.definition.body()
+    }
+    getEnv(): NestedEnv {
+        return this.env
+    }
+    toString(): string {
+        return `<class ${this.name()}>`;
+    }
+}
+
+export class AccessError extends Error {
+    constructor(msg?: string) {
+        super(msg)
+        Object.setPrototypeOf(this, AccessError.prototype)
+    }
+}
+
+export class StoneObject {
+    env: NestedEnv
+    constructor(env: NestedEnv) {
+        this.env = env
+    }
+    read(member: string): Primitive {
+        return this.getEnv(member).get(member)
+    }
+    write(member: string, value: Primitive): void {
+        this.getEnv(member).putNew(member, value)
+    }
+    getEnv(member: string): NestedEnv {
+        const e = this.env.where(member)
+        if (e) {
+            return e
+        }
+        throw new AccessError();
+    }
+    toString(): string {
+        return `<object>`
+    }
+}
+
+export class Dot extends ASTList {
+    name(): string {
+        return (this.child(0) as ASTLeaf).getToken().getText()
+    }
+    toString(): string {
+        return '.' + this.name()
+    }
+    eval(env: NestedEnv, value?: Primitive): Primitive {
+        let member = this.name()
+        // constructor
+        if (value instanceof ClassInfo && member === 'new') {
+            const e = new NestedEnv(value.getEnv())
+            const o = new StoneObject(e)
+            e.putNew('this', o)
+            this.initObject(value, e)
+            return o
+        }
+        // access property
+        if (value instanceof StoneObject) {
+            try {
+                return value.read(member)
+            } catch {}
+        }
+        throw new StoneError(`bad member access: ${member}`)
+    }
+    initObject(c: ClassInfo, env: NestedEnv) {
+        if (c.getSuperClass() != null) {
+            this.initObject(c.getSuperClass(), env)
+        }
+        c.body().eval(env)
     }
 }

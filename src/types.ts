@@ -1,3 +1,3 @@
-import {StoneFunction, NativeFunction} from './ast'
+import {StoneFunction, NativeFunction, ClassInfo, StoneObject} from './ast'
 
-export type Primitive = string | number | StoneFunction | NativeFunction
+export type Primitive = string | number | StoneFunction | NativeFunction | ClassInfo | StoneObject
